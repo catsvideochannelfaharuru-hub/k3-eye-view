@@ -1,7 +1,8 @@
-import { Suspense } from 'react'
+import { Suspense, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, useTexture, Html } from '@react-three/drei'
 import { useAppStore, STATUS_META } from '../store/useAppStore'
+import { enrichPoints } from '../lib/categoryHelpers'
 
 const METERS_PER_UNIT_X = 40 // lebar denah (dunia 3D) dalam "meter arbitrer" — cukup untuk proporsi visual
 
@@ -13,16 +14,9 @@ function FloorPlane({ floor, isActive, onSelectFloor }) {
 
   return (
     <group position={[0, floor.elevation_z, 0]}>
-      {/* raycast={() => null}: lempengan lantai murni visual, tidak menghalangi
-          klik ke marker di lantai lain — lihat catatan di bawah komponen ini */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} raycast={() => null}>
         <planeGeometry args={[width, depth]} />
-        <meshStandardMaterial
-          map={texture}
-          transparent
-          opacity={isActive ? 1 : 0.55}
-          side={2}
-        />
+        <meshStandardMaterial map={texture} transparent opacity={isActive ? 1 : 0.55} side={2} />
       </mesh>
       <Html position={[-width / 2 + 1, 0.05, -depth / 2 + 1]} distanceFactor={30}>
         <button
@@ -42,12 +36,10 @@ function PointMarker({ point, floor, selected, onSelect }) {
   const depth = width * aspect
   const x = (point.pos_x - 0.5) * width
   const z = (point.pos_y - 0.5) * depth
-  const status = STATUS_META[point.status]
+  const color = point.marker_type ? '#1C1F22' : STATUS_META[point.status].color
 
   return (
     <group position={[x, floor.elevation_z + 0.4, z]}>
-      {/* hit-area tak kasat mata, lebih besar dari bola visualnya —
-          supaya gampang diklik tanpa mengubah tampilan */}
       <mesh
         onClick={(e) => {
           e.stopPropagation()
@@ -66,12 +58,13 @@ function PointMarker({ point, floor, selected, onSelect }) {
       </mesh>
       <mesh raycast={() => null}>
         <sphereGeometry args={[selected ? 0.5 : 0.35, 16, 16]} />
-        <meshStandardMaterial
-          color={status.color}
-          emissive={status.color}
-          emissiveIntensity={selected ? 0.9 : 0.4}
-        />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={selected ? 0.9 : 0.4} />
       </mesh>
+      {point.marker_type && (
+        <Html position={[0, 0.6, 0]} distanceFactor={30} center>
+          <div className="floor3d__marker-icon">{point.icon}</div>
+        </Html>
+      )}
     </group>
   )
 }
@@ -79,6 +72,8 @@ function PointMarker({ point, floor, selected, onSelect }) {
 export default function Floor3DView() {
   const floors = useAppStore((s) => s.floors)
   const points = useAppStore((s) => s.points)
+  const assets = useAppStore((s) => s.assets)
+  const enrichedPoints = useMemo(() => enrichPoints(points, assets), [points, assets])
   const activeCategories = useAppStore((s) => s.activeCategories)
   const activeFloorLevel = useAppStore((s) => s.activeFloorLevel)
   const setActiveFloorLevel = useAppStore((s) => s.setActiveFloorLevel)
@@ -101,7 +96,7 @@ export default function Floor3DView() {
                 isActive={floor.level === activeFloorLevel}
                 onSelectFloor={setActiveFloorLevel}
               />
-              {points
+              {enrichedPoints
                 .filter((p) => p.floor_id === floor.id && activeCategories.includes(p.category))
                 .map((p) => (
                   <PointMarker

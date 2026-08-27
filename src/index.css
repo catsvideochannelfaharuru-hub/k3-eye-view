@@ -619,3 +619,170 @@ code {
   color: var(--danger) !important;
   border-color: var(--danger) !important;
 }
+
+/* --- Zoom controls & container --- */
+.floor2d-zoom-container {
+  position: relative;
+  width: 100%;
+  height: 560px;
+  overflow: auto;
+  background: #f0f0ec;
+}
+
+.zoom-controls {
+  position: sticky;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  float: left;
+  margin: 10px;
+}
+
+.zoom-controls button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.zoom-controls button:disabled { opacity: 0.35; }
+.zoom-controls span { font-size: 12px; color: var(--text-muted); min-width: 36px; text-align: center; }
+
+/* --- Routes overlay (SVG) --- */
+.floor2d__routes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.evac-route-line {
+  fill: none;
+  stroke: #2f9e44;
+  stroke-width: 0.6;
+  stroke-dasharray: 1.5 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.evac-route-line--draft {
+  stroke: var(--hazard);
+}
+
+.evac-route-vertex {
+  fill: var(--hazard-dark);
+}
+
+/* --- Marker (exit/assembly point) --- */
+.floor2d__marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--hazard-dark);
+  background: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  padding: 0;
+}
+
+.floor2d__marker--selected {
+  box-shadow: 0 0 0 4px rgba(245, 183, 0, 0.45);
+}
+
+.floor3d__marker-icon {
+  font-size: 16px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+/* --- Asset picker modal --- */
+.asset-picker__search {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.asset-picker__list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.asset-picker__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: none;
+  text-align: left;
+}
+
+.asset-picker__item:hover { background: var(--bg); border-color: var(--border); }
+
+.asset-picker__icon { font-size: 18px; }
+
+.asset-picker__info {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+}
+
+.asset-picker__info span { color: var(--text-muted); font-size: 12px; }
+
+.asset-picker__empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+/* --- Detail panel action row --- */
+.detail-panel__actions-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.detail-panel__actions-row button {
+  padding: 8px;
+  border-radius: 7px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.detail-panel__delete {
+  color: var(--danger) !important;
+  border-color: var(--danger) !important;
+}

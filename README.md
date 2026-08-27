@@ -54,12 +54,37 @@ public/floorplans/            # denah PNG bersih per lantai (hasil crop dari PDF
 supabase/migrations/          # SQL skema + seed
 ```
 
-## Menambah titik K3 baru
+## Menambah data K3 (versi terbaru — integrasi assets_k3)
 
-Sekarang bisa langsung dari UI: klik tombol kategori di toolbar **"Tambah titik"** (di
-atas denah, mode 2D), lalu klik lokasinya di denah — form akan muncul untuk isi nama
-ruangan, status, jatuh tempo, dan catatan. Untuk edit/hapus, klik titik yang sudah ada
-di denah lalu klik **"Edit titik ini"** di panel detail.
+**Perubahan arsitektur penting:** `k3_points` sekarang murni "pin lokasi di peta" —
+kategori, status, dan detail asset (merk, lokasi, tanggal kadaluarsa) diambil
+langsung dari tabel `assets_k3` (master data, dikelola dari app K3RS App yang
+sudah ada). Status OK/jatuh-tempo-dekat/lewat-jatuh-tempo dihitung **otomatis**
+dari `tgl_expired`, bukan diisi manual.
+
+Toolbar di atas denah (mode 2D) punya 4 opsi:
+- **+ Dari Asset** — pilih asset yang belum dipetakan (dari `assets_k3`), lalu klik lokasinya di denah.
+- **🚪 Jalur Keluar** / **📍 Titik Kumpul** — marker manual (tidak terhubung ke asset), untuk emergency exit & assembly point.
+- **➰ Gambar Jalur Evakuasi** — klik beberapa titik di denah untuk bikin garis jalur evakuasi, simpan ke tabel `evacuation_routes`.
+
+Klik titik yang sudah ada di panel detail untuk **pindahkan** atau **lepas dari peta**
+(untuk asset) / **ubah label** (untuk marker).
+
+## Zoom pada denah
+
+Kontrol zoom (+/−/Reset) ada di pojok kiri atas viewer 2D. Berguna untuk mapping
+titik presisi di ruangan kecil/padat. Saat zoom in, geser dengan scroll biasa.
+
+## Migration database
+
+Jalankan migration secara berurutan di Supabase SQL Editor:
+1. `0001_init.sql` — skema awal
+2. `0002_seed.sql` — seed gedung & lantai
+3. `0003_assets_integration.sql` — **PENTING**: mengubah `k3_points` untuk reference
+   ke `assets_k3` (menghapus kolom lama: category/room_name/status/due_date/notes),
+   dan menambah tabel `evacuation_routes`. Migration ini **menghapus semua data
+   k3_points lama** — pastikan itu memang yang kamu mau (sesuai keputusan kamu:
+   mulai bersih dari assets_k3).
 
 ## Autentikasi (Supabase Auth)
 

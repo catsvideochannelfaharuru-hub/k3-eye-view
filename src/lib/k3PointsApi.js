@@ -4,69 +4,82 @@ import { useAppStore } from '../store/useAppStore'
 function isDemoMode() {
   return useAppStore.getState().building?.id === 'demo-building'
 }
-
+function isLocalId(id) {
+  return typeof id === 'string' && id.startsWith('local-')
+}
 function genLocalId() {
   return 'local-' + Math.random().toString(36).slice(2, 10)
 }
 
-export async function createPoint(data) {
-  const { addPointLocal, closeForm } = useAppStore.getState()
+// --- Titik yang nempel ke asset (asset_id terisi) ---
+export async function placeAssetPoint({ floor_id, asset_id, pos_x, pos_y }) {
+  const { addPointLocal } = useAppStore.getState()
+  const payload = { floor_id, asset_id, marker_type: null, label: null, pos_x, pos_y }
 
   if (isDemoMode()) {
-    addPointLocal({ id: genLocalId(), ...data })
-    closeForm()
+    addPointLocal({ id: genLocalId(), ...payload })
     return { error: null }
   }
 
-  const { data: inserted, error } = await supabase
-    .from('k3_points')
-    .insert(data)
-    .select()
-    .single()
-
-  if (!error) {
-    addPointLocal(inserted)
-    closeForm()
-  }
+  const { data, error } = await supabase.from('k3_points').insert(payload).select().single()
+  if (!error) addPointLocal(data)
   return { error }
 }
 
-export async function updatePoint(id, patch) {
-  const { updatePointLocal, closeForm } = useAppStore.getState()
+// --- Marker manual (emergency exit / assembly point) ---
+export async function placeMarkerPoint({ floor_id, marker_type, label, pos_x, pos_y }) {
+  const { addPointLocal } = useAppStore.getState()
+  const payload = { floor_id, asset_id: null, marker_type, label, pos_x, pos_y }
 
-  if (isDemoMode() || id.startsWith('local-')) {
-    updatePointLocal(id, patch)
-    closeForm()
+  if (isDemoMode()) {
+    addPointLocal({ id: genLocalId(), ...payload })
     return { error: null }
   }
 
-  const { data: updated, error } = await supabase
+  const { data, error } = await supabase.from('k3_points').insert(payload).select().single()
+  if (!error) addPointLocal(data)
+  return { error }
+}
+
+export async function updatePointPosition(id, pos_x, pos_y) {
+  const { updatePointLocal } = useAppStore.getState()
+  if (isDemoMode() || isLocalId(id)) {
+    updatePointLocal(id, { pos_x, pos_y })
+    return { error: null }
+  }
+  const { data, error } = await supabase
     .from('k3_points')
-    .update(patch)
+    .update({ pos_x, pos_y })
     .eq('id', id)
     .select()
     .single()
+  if (!error) updatePointLocal(id, data)
+  return { error }
+}
 
-  if (!error) {
-    updatePointLocal(id, updated)
-    closeForm()
+export async function updateMarkerLabel(id, label) {
+  const { updatePointLocal } = useAppStore.getState()
+  if (isDemoMode() || isLocalId(id)) {
+    updatePointLocal(id, { label })
+    return { error: null }
   }
+  const { data, error } = await supabase
+    .from('k3_points')
+    .update({ label })
+    .eq('id', id)
+    .select()
+    .single()
+  if (!error) updatePointLocal(id, data)
   return { error }
 }
 
 export async function deletePoint(id) {
-  const { removePointLocal, closeForm } = useAppStore.getState()
-
-  if (isDemoMode() || id.startsWith('local-')) {
+  const { removePointLocal } = useAppStore.getState()
+  if (isDemoMode() || isLocalId(id)) {
     removePointLocal(id)
-    closeForm()
     return { error: null }
   }
-
   const { error } = await supabase.from('k3_points').delete().eq('id', id)
-  if (!error) {
-    removePointLocal(id)
-    closeForm()
-  }
+  if (!error) removePointLocal(id)
   return { error }
 }

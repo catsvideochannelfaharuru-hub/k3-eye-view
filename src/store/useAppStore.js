@@ -1,37 +1,31 @@
 import { create } from 'zustand'
 
-export const CATEGORY_META = {
-  apar: { label: 'APAR', icon: '🧯' },
-  hydrant: { label: 'Hydrant', icon: '💧' },
-  detektor_asap: { label: 'Detektor asap', icon: '🔔' },
-  laporan_bahaya: { label: 'Laporan bahaya', icon: '⚠️' },
-}
-
-export const STATUS_META = {
-  ok: { label: 'OK', color: '#2f9e44' },
-  jatuh_tempo_dekat: { label: 'Jatuh tempo dekat', color: '#f2994a' },
-  lewat_jatuh_tempo: { label: 'Lewat jatuh tempo', color: '#e03131' },
-}
 
 export const useAppStore = create((set, get) => ({
   viewMode: '2d', // '2d' | '3d'
   building: null,
   floors: [],
   activeFloorLevel: 1,
-  points: [], // semua titik k3 (semua lantai), difilter per komponen saat dipakai
-  activeCategories: Object.keys(CATEGORY_META),
+
+  assets: [], // semua baris assets_k3
+  points: [], // k3_points mentah: {id, floor_id, asset_id, marker_type, label, pos_x, pos_y}
+  routes: [], // evacuation_routes: {id, floor_id, label, points:[{x,y}]}
+
+  activeCategories: [], // diisi otomatis begitu data asset termuat (lihat setData)
   selectedPointId: null,
   loading: true,
   error: null,
 
-  // --- state untuk tambah/edit titik (CRUD) ---
-  addingCategory: null, // string kategori kalau sedang mode "klik di denah untuk taruh titik", null kalau tidak
-  formOpen: false,
-  formMode: 'add', // 'add' | 'edit'
-  formInitial: null, // data awal form (posisi utk add, data titik utk edit)
+  // --- mode "tambah" ---
+  placementMode: null, // null | { kind: 'asset', asset } | { kind: 'marker', markerType }
+  drawingRoute: false,
+  routeDraft: [], // [{x,y}, ...] sementara saat menggambar jalur
+
+  zoomScale: 1,
 
   setViewMode: (mode) => set({ viewMode: mode }),
-  setActiveFloorLevel: (level) => set({ activeFloorLevel: level, selectedPointId: null }),
+  setActiveFloorLevel: (level) =>
+    set({ activeFloorLevel: level, selectedPointId: null, zoomScale: 1 }),
   toggleCategory: (cat) =>
     set((state) => ({
       activeCategories: state.activeCategories.includes(cat)
@@ -39,57 +33,41 @@ export const useAppStore = create((set, get) => ({
         : [...state.activeCategories, cat],
     })),
   selectPoint: (id) => set({ selectedPointId: id }),
+  setZoomScale: (zoomScale) => set({ zoomScale: Math.min(Math.max(zoomScale, 1), 4) }),
 
-  setData: ({ building, floors, points }) => set({ building, floors, points, loading: false }),
-  setError: (error) => set({ error, loading: false }),
-
-  // --- actions CRUD ---
-  startAddPoint: (category) => set({ addingCategory: category, selectedPointId: null }),
-  cancelAddPoint: () => set({ addingCategory: null }),
-
-  placePoint: (posX, posY) => {
-    const state = get()
-    if (!state.addingCategory) return
-    set({
-      formOpen: true,
-      formMode: 'add',
-      formInitial: {
-        category: state.addingCategory,
-        pos_x: posX,
-        pos_y: posY,
-        room_name: '',
-        status: 'ok',
-        due_date: '',
-        notes: '',
-      },
-      addingCategory: null,
-    })
+  setData: ({ building, floors, assets, points, routes }) => {
+    const categories = Array.from(new Set(assets.map((a) => a.kategori))).filter(Boolean)
+    const allCats = [...categories, 'emergency_exit', 'assembly_point']
+    set({ building, floors, assets, points, routes, loading: false, activeCategories: allCats })
   },
-
-  openEditForm: (point) =>
-    set({ formOpen: true, formMode: 'edit', formInitial: point, selectedPointId: point.id }),
-
-  closeForm: () => set({ formOpen: false, formInitial: null }),
-
-  addPointLocal: (point) => set((state) => ({ points: [...state.points, point] })),
-  updatePointLocal: (id, patch) =>
-    set((state) => ({
-      points: state.points.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-    })),
-  removePointLocal: (id) =>
-    set((state) => ({
-      points: state.points.filter((p) => p.id !== id),
-      selectedPointId: state.selectedPointId === id ? null : state.selectedPointId,
-    })),
+  setError: (error) => set({ error, loading: false }),
 
   activeFloor: () => {
     const state = get()
     return state.floors.find((f) => f.level === state.activeFloorLevel) || null
   },
-  visiblePoints: (floorId) => {
-    const state = get()
-    return state.points.filter(
-      (p) => p.floor_id === floorId && state.activeCategories.includes(p.category)
-    )
-  },
+
+  // --- actions mode tambah/placement ---
+  startPlaceAsset: (asset) => set({ placementMode: { kind: 'asset', asset }, drawingRoute: false }),
+  startPlaceMarker: (markerType) =>
+    set({ placementMode: { kind: 'marker', markerType }, drawingRoute: false }),
+  cancelPlacement: () => set({ placementMode: null }),
+
+  startDrawRoute: () => set({ drawingRoute: true, routeDraft: [], placementMode: null }),
+  addRouteVertex: (pt) => set((state) => ({ routeDraft: [...state.routeDraft, pt] })),
+  undoRouteVertex: () => set((state) => ({ routeDraft: state.routeDraft.slice(0, -1) })),
+  cancelDrawRoute: () => set({ drawingRoute: false, routeDraft: [] }),
+
+  // --- CRUD lokal (dipanggil dari lib/*Api.js setelah sukses ke Supabase / demo) ---
+  addPointLocal: (point) => set((state) => ({ points: [...state.points, point] })),
+  updatePointLocal: (id, patch) =>
+    set((state) => ({ points: state.points.map((p) => (p.id === id ? { ...p, ...patch } : p)) })),
+  removePointLocal: (id) =>
+    set((state) => ({
+      points: state.points.filter((p) => p.id !== id),
+      selectedPointId: state.selectedPointId === id ? null : state.selectedPointId,
+    })),
+  addRouteLocal: (route) => set((state) => ({ routes: [...state.routes, route] })),
+  removeRouteLocal: (id) => set((state) => ({ routes: state.routes.filter((r) => r.id !== id) })),
 }))
+export { STATUS_META } from '../lib/categoryHelpers'
