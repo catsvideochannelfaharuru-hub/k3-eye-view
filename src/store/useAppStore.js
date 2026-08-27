@@ -24,6 +24,12 @@ export const useAppStore = create((set, get) => ({
   loading: true,
   error: null,
 
+  // --- state untuk tambah/edit titik (CRUD) ---
+  addingCategory: null, // string kategori kalau sedang mode "klik di denah untuk taruh titik", null kalau tidak
+  formOpen: false,
+  formMode: 'add', // 'add' | 'edit'
+  formInitial: null, // data awal form (posisi utk add, data titik utk edit)
+
   setViewMode: (mode) => set({ viewMode: mode }),
   setActiveFloorLevel: (level) => set({ activeFloorLevel: level, selectedPointId: null }),
   toggleCategory: (cat) =>
@@ -36,6 +42,45 @@ export const useAppStore = create((set, get) => ({
 
   setData: ({ building, floors, points }) => set({ building, floors, points, loading: false }),
   setError: (error) => set({ error, loading: false }),
+
+  // --- actions CRUD ---
+  startAddPoint: (category) => set({ addingCategory: category, selectedPointId: null }),
+  cancelAddPoint: () => set({ addingCategory: null }),
+
+  placePoint: (posX, posY) => {
+    const state = get()
+    if (!state.addingCategory) return
+    set({
+      formOpen: true,
+      formMode: 'add',
+      formInitial: {
+        category: state.addingCategory,
+        pos_x: posX,
+        pos_y: posY,
+        room_name: '',
+        status: 'ok',
+        due_date: '',
+        notes: '',
+      },
+      addingCategory: null,
+    })
+  },
+
+  openEditForm: (point) =>
+    set({ formOpen: true, formMode: 'edit', formInitial: point, selectedPointId: point.id }),
+
+  closeForm: () => set({ formOpen: false, formInitial: null }),
+
+  addPointLocal: (point) => set((state) => ({ points: [...state.points, point] })),
+  updatePointLocal: (id, patch) =>
+    set((state) => ({
+      points: state.points.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    })),
+  removePointLocal: (id) =>
+    set((state) => ({
+      points: state.points.filter((p) => p.id !== id),
+      selectedPointId: state.selectedPointId === id ? null : state.selectedPointId,
+    })),
 
   activeFloor: () => {
     const state = get()

@@ -56,10 +56,31 @@ supabase/migrations/          # SQL skema + seed
 
 ## Menambah titik K3 baru
 
-Untuk sekarang, titik ditambah langsung lewat Supabase Table Editor / SQL
-(tabel `k3_points`, kolom `pos_x`/`pos_y` = posisi relatif 0–1 di atas gambar
-lantai — 0,0 = pojok kiri-atas gambar). Form tambah/edit titik dari UI (klik-untuk-taruh-pin)
-belum dibuat — masuk sebagai langkah berikutnya.
+Sekarang bisa langsung dari UI: klik tombol kategori di toolbar **"Tambah titik"** (di
+atas denah, mode 2D), lalu klik lokasinya di denah — form akan muncul untuk isi nama
+ruangan, status, jatuh tempo, dan catatan. Untuk edit/hapus, klik titik yang sudah ada
+di denah lalu klik **"Edit titik ini"** di panel detail.
+
+## Autentikasi (Supabase Auth)
+
+App sekarang mewajibkan login sebelum bisa melihat/mengedit data. Dua cara masuk:
+
+1. **Email/password** — daftar dulu lewat form "Daftar", Supabase akan kirim email
+   verifikasi (tergantung setting project kamu).
+2. **Tombol "Masuk sebagai Tamu"** (mode development) — pakai fitur *Anonymous Sign-In*
+   Supabase. **Wajib diaktifkan dulu** di Supabase Dashboard:
+   `Authentication` → `Sign In / Providers` → aktifkan **"Allow anonymous sign-ins"**.
+   Tanpa ini, tombol Tamu akan gagal dengan error yang jelas di layar.
+
+Untuk **mematikan** opsi Tamu nanti saat go-live (supaya semua wajib pakai akun asli),
+tambahkan env var ini di Netlify (dan `.env` lokal):
+```
+VITE_ENABLE_GUEST_LOGIN=false
+```
+
+Baik user login biasa maupun tamu, keduanya dianggap `authenticated` oleh Supabase RLS
+(lihat komentar di `0001_init.sql`) — jadi keduanya bisa baca & tulis data k3_points
+selama policy belum kamu perketat per-role.
 
 ## Catatan tinggi lantai (3D)
 
@@ -68,7 +89,6 @@ Ganti sesuai data tinggi lantai aktual kalau kamu punya gambar potongan (section
 
 ## Rencana lanjutan (belum dikerjakan)
 
-- Form input/edit titik K3 langsung dari UI (klik di denah untuk taruh pin baru)
 - Autentikasi Supabase + role (admin/auditor/teknisi) — skema & RLS dasar sudah disiapkan di migration
 - Riwayat inspeksi per titik (tabel `inspections` sudah ada, UI belum)
 - Kartu "Kepatuhan pelatihan" — perlu tabel training terpisah, belum ada di skema

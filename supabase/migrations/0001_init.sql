@@ -83,8 +83,11 @@ alter table k3_points enable row level security;
 alter table inspections enable row level security;
 alter table profiles enable row level security;
 
--- Kebijakan dasar: semua user login bisa baca; hanya admin/auditor bisa tulis.
--- Sesuaikan lagi nanti sesuai kebutuhan approval/audit trail RS kamu.
+-- Kebijakan dasar: semua user login (termasuk anonymous/guest) bisa baca & tulis.
+-- auth.role() = 'authenticated' juga TRUE untuk user hasil signInAnonymously(),
+-- jadi tombol "Masuk sebagai Tamu" di app otomatis ikut policy ini.
+-- Perketat lagi nanti sesuai kebutuhan approval/audit trail RS kamu
+-- (misal: hanya role admin/teknisi di tabel profiles yang boleh tulis).
 create policy "read for authenticated" on buildings for select using (auth.role() = 'authenticated');
 create policy "read for authenticated" on floors for select using (auth.role() = 'authenticated');
 create policy "read for authenticated" on k3_points for select using (auth.role() = 'authenticated');

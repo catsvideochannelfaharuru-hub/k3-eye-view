@@ -4,6 +4,7 @@ export default function DetailPanel() {
   const points = useAppStore((s) => s.points)
   const selectedPointId = useAppStore((s) => s.selectedPointId)
   const point = points.find((p) => p.id === selectedPointId)
+  const openEditForm = useAppStore((s) => s.openEditForm)
 
   if (!point) {
     return (
@@ -33,9 +34,11 @@ export default function DetailPanel() {
           <span>{point.due_date}</span>
         </div>
       )}
-      {point.notes && (
-        <div className="detail-panel__notes">{point.notes}</div>
-      )}
+      {point.notes && <div className="detail-panel__notes">{point.notes}</div>}
+
+      <button className="detail-panel__edit" onClick={() => openEditForm(point)}>
+        Edit titik ini
+      </button>
     </div>
   )
 }

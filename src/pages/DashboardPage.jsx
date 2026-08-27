@@ -7,6 +7,9 @@ import DetailPanel from '../components/DetailPanel'
 import Floor2DView from '../components/Floor2DView'
 import Floor3DView from '../components/Floor3DView'
 import ViewModeToggle from '../components/ViewModeToggle'
+import UserBadge from '../components/UserBadge'
+import AddPointToolbar from '../components/AddPointToolbar'
+import PointFormModal from '../components/PointFormModal'
 
 export default function DashboardPage() {
   useLoadK3Data()
@@ -25,17 +28,20 @@ export default function DashboardPage() {
         <h1>K3 Eye View</h1>
         <FloorTabs />
         <ViewModeToggle />
+        <UserBadge />
       </header>
 
       {building?.id === 'demo-building' && (
         <div className="demo-banner">
           Menampilkan data contoh lokal — hubungkan project Supabase kamu (isi <code>.env</code>)
           dan tambahkan data ke tabel <code>buildings</code>/<code>floors</code>/<code>k3_points</code>
-          untuk data sungguhan.
+          untuk data sungguhan. Perubahan lewat form tambah/edit di bawah tetap bisa dicoba,
+          tapi hanya tersimpan sementara di layar ini (tidak ke database).
         </div>
       )}
 
       <SummaryStats />
+      <AddPointToolbar />
 
       <div className="app-body">
         <LayerPanel />
@@ -44,6 +50,8 @@ export default function DashboardPage() {
         </div>
         <DetailPanel />
       </div>
+
+      <PointFormModal />
     </div>
   )
 }
