@@ -97,7 +97,7 @@ export default function AddMappingAccordion() {
 
           {!busy && (
             <div className="add-mapping-list">
-              <button onClick={() => setPickerOpen(true)}>+ Dari Asset</button>
+              <button onClick={() => setPickerOpen(true)}>🧯 Asset K3</button>
               <button onClick={() => startPlaceMarker('emergency_exit')}>🚪 Jalur Keluar</button>
               <button onClick={() => startPlaceMarker('assembly_point')}>📍 Titik Kumpul</button>
               <button onClick={() => startPlaceMarker('cctv')}>📷 CCTV</button>

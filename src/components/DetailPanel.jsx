@@ -27,14 +27,15 @@ export default function DetailPanel() {
         <div className="detail-panel__header"><span className="layer-row__icon">➰</span><span>Jalur Evakuasi</span></div>
         <div className="detail-panel__room">{route.label || '(tanpa nama)'}</div>
         <div className="detail-panel__row"><span>Jumlah titik</span><span>{route.points.length}</span></div>
-        <div className="detail-panel__actions-row">
+        <div className="detail-panel__icon-actions">
           <button
-            className="detail-panel__delete"
+            className="icon-btn icon-btn--danger"
+            title="Hapus jalur"
             onClick={async () => {
               if (confirm('Hapus jalur evakuasi ini?')) await deleteRoute(route.id)
             }}
           >
-            Hapus jalur
+            🗑️
           </button>
         </div>
       </div>
@@ -47,14 +48,15 @@ export default function DetailPanel() {
       <div className="detail-panel">
         <div className="detail-panel__header"><span className="layer-row__icon">🟧</span><span>{meta.label}</span></div>
         <div className="detail-panel__room">{zone.label || '(tanpa nama)'}</div>
-        <div className="detail-panel__actions-row">
+        <div className="detail-panel__icon-actions">
           <button
-            className="detail-panel__delete"
+            className="icon-btn icon-btn--danger"
+            title="Hapus zona"
             onClick={async () => {
               if (confirm('Hapus zona ini?')) await deleteZone(zone.id)
             }}
           >
-            Hapus zona
+            🗑️
           </button>
         </div>
       </div>
@@ -104,11 +106,13 @@ export default function DetailPanel() {
         {point.marker_type === 'cctv' && (
           <div className="detail-panel__row"><span>Arah sorot</span><span>{point.direction_deg ?? 0}°</span></div>
         )}
-        <div className="detail-panel__actions-row">
-          <button onClick={handleRename}>Ubah label</button>
-          {point.marker_type === 'cctv' && <button onClick={handleDirection}>Ubah arah sorot</button>}
-          <button onClick={handleMove}>Pindahkan</button>
-          <button className="detail-panel__delete" onClick={handleDelete}>Hapus</button>
+        <div className="detail-panel__icon-actions">
+          <button className="icon-btn" title="Ubah label" onClick={handleRename}>✏️</button>
+          {point.marker_type === 'cctv' && (
+            <button className="icon-btn" title="Ubah arah sorot" onClick={handleDirection}>🧭</button>
+          )}
+          <button className="icon-btn" title="Pindahkan" onClick={handleMove}>⇄</button>
+          <button className="icon-btn icon-btn--danger" title="Hapus" onClick={handleDelete}>🗑️</button>
         </div>
       </div>
     )
@@ -140,9 +144,9 @@ export default function DetailPanel() {
           )}
         </>
       )}
-      <div className="detail-panel__actions-row">
-        <button onClick={handleMove}>Pindahkan titik</button>
-        <button className="detail-panel__delete" onClick={handleDelete}>Lepas dari peta</button>
+      <div className="detail-panel__icon-actions">
+        <button className="icon-btn" title="Pindahkan titik" onClick={handleMove}>⇄</button>
+        <button className="icon-btn icon-btn--danger" title="Lepas dari peta" onClick={handleDelete}>🗑️</button>
       </div>
     </div>
   )

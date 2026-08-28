@@ -980,3 +980,109 @@ code {
 /* --- Pan/zoom: floor2d pakai transform (bukan native scroll lagi) --- */
 .floor2d-zoom-container { overflow: hidden; user-select: none; }
 .floor2d { width: 100%; }
+
+/* --- Icon action buttons (ganti tombol teks panjang di detail panel) --- */
+.detail-panel__icon-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover { border-color: var(--text); background: var(--bg); }
+
+.icon-btn--danger { border-color: var(--danger); color: var(--danger); }
+.icon-btn--danger:hover { background: #FDEDEC; }
+
+/* ======================================================================
+   RESPONSIVE MOBILE
+   ====================================================================== */
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 14px 12px 24px;
+    max-width: 100%;
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    gap: 10px;
+    row-gap: 12px;
+  }
+
+  .app-header h1 {
+    font-size: 18px;
+    flex: 1 1 auto;
+  }
+
+  .floor-tabs {
+    order: 3;
+    flex: 1 1 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .floor-tab {
+    flex-shrink: 0;
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+
+  .view-toggle { order: 1; }
+  .user-badge { order: 2; }
+
+  .user-badge__label { max-width: 90px; }
+
+  .demo-banner { font-size: 12px; padding: 8px 10px; }
+
+  .app-body {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .app-sidebar { order: 2; }
+  .app-main { order: 1; min-height: 0; }
+
+  .floor2d-zoom-container { height: auto; aspect-ratio: 1800 / 1100; min-height: 0; }
+
+  .accordion__body { padding: 10px; }
+
+  .add-mapping-list button,
+  .add-toolbar--vertical button {
+    padding: 11px 12px;
+    font-size: 13.5px;
+  }
+
+  .layer-panel, .detail-panel, .accordion { border-radius: 10px; }
+
+  .modal-card {
+    width: calc(100vw - 24px);
+    padding: 18px;
+  }
+
+  .zoom-controls {
+    margin: 8px;
+    padding: 3px 8px;
+  }
+
+  .stat-value { font-size: 24px; }
+}
+
+@media (max-width: 420px) {
+  .app-header h1 { font-size: 16px; }
+  .floor-tab { padding: 6px 11px; font-size: 12px; }
+  .user-badge__logout { padding: 4px 8px; font-size: 11px; }
+}
