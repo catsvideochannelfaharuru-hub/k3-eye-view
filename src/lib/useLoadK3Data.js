@@ -7,6 +7,7 @@ import {
   FALLBACK_ASSETS,
   FALLBACK_POINTS,
   FALLBACK_ROUTES,
+  FALLBACK_ZONES,
 } from '../data/fallbackData'
 
 function useFallback(setData) {
@@ -16,6 +17,7 @@ function useFallback(setData) {
     assets: FALLBACK_ASSETS,
     points: FALLBACK_POINTS,
     routes: FALLBACK_ROUTES,
+    zones: FALLBACK_ZONES,
   })
 }
 
@@ -45,15 +47,21 @@ export function useLoadK3Data() {
         const floorIds = (floors || []).map((f) => f.id)
         const emptyFloorGuard = floorIds.length ? floorIds : ['00000000-0000-0000-0000-000000000000']
 
-        const [{ data: assets, error: aErr }, { data: points, error: pErr }, { data: routes, error: rErr }] =
-          await Promise.all([
-            supabase.from('assets_k3').select('*'),
-            supabase.from('k3_points').select('*').in('floor_id', emptyFloorGuard),
-            supabase.from('evacuation_routes').select('*').in('floor_id', emptyFloorGuard),
-          ])
+        const [
+          { data: assets, error: aErr },
+          { data: points, error: pErr },
+          { data: routes, error: rErr },
+          { data: zones, error: zErr },
+        ] = await Promise.all([
+          supabase.from('assets_k3').select('*'),
+          supabase.from('k3_points').select('*').in('floor_id', emptyFloorGuard),
+          supabase.from('evacuation_routes').select('*').in('floor_id', emptyFloorGuard),
+          supabase.from('hazard_zones').select('*').in('floor_id', emptyFloorGuard),
+        ])
         if (aErr) throw aErr
         if (pErr) throw pErr
         if (rErr) throw rErr
+        if (zErr) throw zErr
 
         if (!cancelled) {
           setData({
@@ -62,6 +70,7 @@ export function useLoadK3Data() {
             assets: assets || [],
             points: points || [],
             routes: routes || [],
+            zones: zones || [],
           })
         }
       } catch (err) {

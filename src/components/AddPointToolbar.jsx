@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAppStore } from '../store/useAppStore'
 import { saveRoute } from '../lib/evacuationApi'
+import { saveZone } from '../lib/hazardZonesApi'
 import AssetPickerModal from './AssetPickerModal'
 
 export default function AddPointToolbar() {
@@ -13,19 +14,22 @@ export default function AddPointToolbar() {
   const startDrawRoute = useAppStore((s) => s.startDrawRoute)
   const undoRouteVertex = useAppStore((s) => s.undoRouteVertex)
   const cancelDrawRoute = useAppStore((s) => s.cancelDrawRoute)
+  const drawingZone = useAppStore((s) => s.drawingZone)
+  const zoneDraft = useAppStore((s) => s.zoneDraft)
+  const startDrawZone = useAppStore((s) => s.startDrawZone)
+  const undoZoneVertex = useAppStore((s) => s.undoZoneVertex)
+  const cancelDrawZone = useAppStore((s) => s.cancelDrawZone)
   const activeFloor = useAppStore((s) => s.activeFloor())
 
   const [pickerOpen, setPickerOpen] = useState(false)
 
-  if (viewMode !== '2d') return null // penempatan & gambar jalur untuk sekarang cuma di 2D
+  if (viewMode !== '2d') return null
 
   if (drawingRoute) {
     return (
       <div className="add-toolbar add-toolbar--active">
         <span>Klik di denah untuk tambah titik jalur ({routeDraft.length} titik)…</span>
-        <button onClick={undoRouteVertex} disabled={routeDraft.length === 0}>
-          Hapus titik terakhir
-        </button>
+        <button onClick={undoRouteVertex} disabled={routeDraft.length === 0}>Hapus titik terakhir</button>
         <button
           disabled={routeDraft.length < 2}
           onClick={async () => {
@@ -41,13 +45,38 @@ export default function AddPointToolbar() {
     )
   }
 
+  if (drawingZone) {
+    const zoneLabel = drawingZone === 'risk' ? 'Zona Berisiko' : 'Zona Berbahaya'
+    return (
+      <div className="add-toolbar add-toolbar--active">
+        <span>
+          Klik di denah untuk gambar <strong>{zoneLabel}</strong> ({zoneDraft.length} titik)…
+        </span>
+        <button onClick={undoZoneVertex} disabled={zoneDraft.length === 0}>Hapus titik terakhir</button>
+        <button
+          disabled={zoneDraft.length < 3}
+          onClick={async () => {
+            const label = window.prompt('Nama zona (opsional):', '')
+            await saveZone({ floor_id: activeFloor.id, label, zone_type: drawingZone, points: zoneDraft })
+            cancelDrawZone()
+          }}
+        >
+          Selesai & Simpan
+        </button>
+        <button onClick={cancelDrawZone}>Batal</button>
+      </div>
+    )
+  }
+
   if (placementMode) {
     const label =
       placementMode.kind === 'asset'
         ? `asset "${placementMode.asset.nama_perangkat || placementMode.asset.kode_asset}"`
         : placementMode.markerType === 'emergency_exit'
         ? 'Jalur Keluar'
-        : 'Titik Kumpul'
+        : placementMode.markerType === 'assembly_point'
+        ? 'Titik Kumpul'
+        : 'CCTV'
     return (
       <div className="add-toolbar add-toolbar--active">
         <span>
@@ -64,7 +93,10 @@ export default function AddPointToolbar() {
       <button onClick={() => setPickerOpen(true)}>+ Dari Asset</button>
       <button onClick={() => startPlaceMarker('emergency_exit')}>🚪 Jalur Keluar</button>
       <button onClick={() => startPlaceMarker('assembly_point')}>📍 Titik Kumpul</button>
+      <button onClick={() => startPlaceMarker('cctv')}>📷 CCTV</button>
       <button onClick={startDrawRoute}>➰ Gambar Jalur Evakuasi</button>
+      <button onClick={() => startDrawZone('risk')}>🟧 Zona Berisiko</button>
+      <button onClick={() => startDrawZone('danger')}>🟥 Zona Berbahaya</button>
 
       {pickerOpen && <AssetPickerModal onClose={() => setPickerOpen(false)} />}
     </div>

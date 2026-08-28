@@ -26,10 +26,18 @@ export async function placeAssetPoint({ floor_id, asset_id, pos_x, pos_y }) {
   return { error }
 }
 
-// --- Marker manual (emergency exit / assembly point) ---
-export async function placeMarkerPoint({ floor_id, marker_type, label, pos_x, pos_y }) {
+// --- Marker manual (emergency exit / assembly point / cctv) ---
+export async function placeMarkerPoint({ floor_id, marker_type, label, pos_x, pos_y, direction_deg }) {
   const { addPointLocal } = useAppStore.getState()
-  const payload = { floor_id, asset_id: null, marker_type, label, pos_x, pos_y }
+  const payload = {
+    floor_id,
+    asset_id: null,
+    marker_type,
+    label,
+    pos_x,
+    pos_y,
+    direction_deg: direction_deg ?? null,
+  }
 
   if (isDemoMode()) {
     addPointLocal({ id: genLocalId(), ...payload })
@@ -38,6 +46,22 @@ export async function placeMarkerPoint({ floor_id, marker_type, label, pos_x, po
 
   const { data, error } = await supabase.from('k3_points').insert(payload).select().single()
   if (!error) addPointLocal(data)
+  return { error }
+}
+
+export async function updateMarkerDirection(id, direction_deg) {
+  const { updatePointLocal } = useAppStore.getState()
+  if (isDemoMode() || isLocalId(id)) {
+    updatePointLocal(id, { direction_deg })
+    return { error: null }
+  }
+  const { data, error } = await supabase
+    .from('k3_points')
+    .update({ direction_deg })
+    .eq('id', id)
+    .select()
+    .single()
+  if (!error) updatePointLocal(id, data)
   return { error }
 }
 

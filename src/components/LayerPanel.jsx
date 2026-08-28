@@ -1,6 +1,7 @@
+import { useAppStore } from '../store/useAppStore'
+import { STANDARD_CATEGORIES, MARKER_TYPE_META, getCategoryMeta } from '../lib/categoryHelpers'
 import { useMemo } from 'react'
-import { useAppStore, STATUS_META } from '../store/useAppStore'
-import { getCategoryIcon, MARKER_TYPE_META, enrichPoints } from '../lib/categoryHelpers'
+import { enrichPoints } from '../lib/categoryHelpers'
 
 export default function LayerPanel() {
   const points = useAppStore((s) => s.points)
@@ -9,26 +10,39 @@ export default function LayerPanel() {
   const activeFloor = useAppStore((s) => s.activeFloor())
   const activeCategories = useAppStore((s) => s.activeCategories)
   const toggleCategory = useAppStore((s) => s.toggleCategory)
+  const zones = useAppStore((s) => s.zones)
 
   const floorPoints = activeFloor ? enrichedPoints.filter((p) => p.floor_id === activeFloor.id) : []
-  const categories = Array.from(new Set(floorPoints.map((p) => p.category).filter(Boolean)))
-  // Tetap tampilkan kategori aktif walau 0 titik di lantai ini, supaya toggle-nya tidak hilang-hilang
-  const allKnown = Array.from(new Set([...categories, ...activeCategories]))
+  const floorZoneCount = activeFloor ? zones.filter((z) => z.floor_id === activeFloor.id).length : 0
+
+  // Kategori equipment standar SELALU ditampilkan (walau 0 titik) + kategori lain
+  // yang muncul di data tapi bukan salah satu dari 5 standar (fallback "lainnya").
+  const extraCategories = Array.from(
+    new Set(
+      floorPoints
+        .filter((p) => !p.marker_type && !STANDARD_CATEGORIES.some((c) => c.key === p.category))
+        .map((p) => p.category)
+    )
+  )
+
+  const rows = [
+    ...STANDARD_CATEGORIES,
+    ...extraCategories.map((c) => getCategoryMeta(c)),
+    ...Object.entries(MARKER_TYPE_META).map(([key, meta]) => ({ key, ...meta })),
+  ]
 
   return (
     <div className="layer-panel">
       <div className="layer-panel__section">
         <div className="layer-panel__title">Layer</div>
-        {allKnown.map((cat) => {
-          const count = floorPoints.filter((p) => p.category === cat).length
-          const icon = MARKER_TYPE_META[cat]?.icon || getCategoryIcon(cat)
-          const label = MARKER_TYPE_META[cat]?.label || cat
+        {rows.map(({ key, label, icon }) => {
+          const count = floorPoints.filter((p) => p.category === key).length
           return (
-            <label key={cat} className="layer-row">
+            <label key={key} className="layer-row">
               <input
                 type="checkbox"
-                checked={activeCategories.includes(cat)}
-                onChange={() => toggleCategory(cat)}
+                checked={activeCategories.includes(key)}
+                onChange={() => toggleCategory(key)}
               />
               <span className="layer-row__icon">{icon}</span>
               <span className="layer-row__label">{label}</span>
@@ -36,16 +50,16 @@ export default function LayerPanel() {
             </label>
           )
         })}
-      </div>
-
-      <div className="layer-panel__section">
-        <div className="layer-panel__title">Status Asset</div>
-        {Object.entries(STATUS_META).map(([key, meta]) => (
-          <div key={key} className="status-row">
-            <span className="status-dot" style={{ background: meta.color }} />
-            <span>{meta.label}</span>
-          </div>
-        ))}
+        <label className="layer-row">
+          <input
+            type="checkbox"
+            checked={activeCategories.includes('hazard_zone')}
+            onChange={() => toggleCategory('hazard_zone')}
+          />
+          <span className="layer-row__icon">🟧</span>
+          <span className="layer-row__label">Zona Bahaya</span>
+          <span className="layer-row__count">{floorZoneCount}</span>
+        </label>
       </div>
     </div>
   )

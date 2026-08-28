@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useAppStore } from '../store/useAppStore'
-import { getCategoryIcon, getUnmappedAssets } from '../lib/categoryHelpers'
+import { getCategoryMeta, getUnmappedAssets, normalizeCategory } from '../lib/categoryHelpers'
 
 export default function AssetPickerModal({ onClose }) {
   const points = useAppStore((s) => s.points)
@@ -51,7 +51,7 @@ export default function AssetPickerModal({ onClose }) {
                 onClose()
               }}
             >
-              <span className="asset-picker__icon">{getCategoryIcon(a.kategori)}</span>
+              <span className="asset-picker__icon">{getCategoryMeta(normalizeCategory(a.kategori)).icon}</span>
               <span className="asset-picker__info">
                 <strong>{a.nama_perangkat || a.kode_asset}</strong>
                 <span>{a.kategori} • {a.lokasi || 'lokasi belum diisi'}</span>

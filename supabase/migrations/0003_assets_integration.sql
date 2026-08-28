@@ -23,8 +23,10 @@ drop type if exists k3_category;
 drop type if exists k3_status;
 
 -- 2. Tambah kolom baru
+-- CATATAN: assets_k3.id bertipe TEXT (bukan uuid) — makanya asset_id di sini
+-- juga TEXT supaya foreign key-nya cocok.
 alter table k3_points
-  add column if not exists asset_id uuid references assets_k3(id) on delete cascade,
+  add column if not exists asset_id text references assets_k3(id) on delete cascade,
   add column if not exists marker_type text check (marker_type in ('emergency_exit', 'assembly_point')),
   add column if not exists label text;
 

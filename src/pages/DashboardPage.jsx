@@ -32,19 +32,20 @@ export default function DashboardPage() {
       {building?.id === 'demo-building' && (
         <div className="demo-banner">
           Menampilkan data contoh lokal — hubungkan project Supabase kamu (isi <code>.env</code>)
-          untuk data sungguhan dari <code>assets_k3</code>. Perubahan lewat toolbar tambah di
-          bawah tetap bisa dicoba, tapi hanya tersimpan sementara di layar ini.
+          untuk data sungguhan dari <code>assets_k3</code>.
         </div>
       )}
 
       <AddPointToolbar />
 
       <div className="app-body">
-        <LayerPanel />
+        <div className="app-sidebar">
+          <DetailPanel />
+          <LayerPanel />
+        </div>
         <div className="app-main">
           {viewMode === '2d' ? <Floor2DView /> : <Floor3DView />}
         </div>
-        <DetailPanel />
       </div>
     </div>
   )
