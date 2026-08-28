@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { STANDARD_CATEGORIES, MARKER_TYPE_META } from '../lib/categoryHelpers'
 
-const DEFAULT_CATEGORIES = [
+export const ALL_CATEGORY_KEYS = [
   ...STANDARD_CATEGORIES.map((c) => c.key),
   ...Object.keys(MARKER_TYPE_META),
   'hazard_zone', // toggle tampil/sembunyi layer zona bahaya
@@ -18,7 +18,7 @@ export const useAppStore = create((set, get) => ({
   routes: [], // evacuation_routes: {id, floor_id, label, points:[{x,y}]}
   zones: [], // hazard_zones: {id, floor_id, label, zone_type, points:[{x,y}]}
 
-  activeCategories: DEFAULT_CATEGORIES,
+  activeCategories: ALL_CATEGORY_KEYS,
   selectedPointId: null,
   selectedRouteId: null,
   selectedZoneId: null,
@@ -26,6 +26,7 @@ export const useAppStore = create((set, get) => ({
   error: null,
 
   // --- mode "tambah" ---
+  addMappingOpen: true, // accordion "Tambah Mapping" di sidebar — terbuka/tertutup
   placementMode: null, // null | { kind: 'asset', asset } | { kind: 'marker', markerType }
   drawingRoute: false,
   routeDraft: [],
@@ -33,6 +34,8 @@ export const useAppStore = create((set, get) => ({
   zoneDraft: [],
 
   zoomScale: 1,
+  panX: 0,
+  panY: 0,
 
   setViewMode: (mode) => set({ viewMode: mode }),
   setActiveFloorLevel: (level) =>
@@ -42,6 +45,8 @@ export const useAppStore = create((set, get) => ({
       selectedRouteId: null,
       selectedZoneId: null,
       zoomScale: 1,
+      panX: 0,
+      panY: 0,
     }),
   toggleCategory: (cat) =>
     set((state) => ({
@@ -49,11 +54,17 @@ export const useAppStore = create((set, get) => ({
         ? state.activeCategories.filter((c) => c !== cat)
         : [...state.activeCategories, cat],
     })),
+  setAllCategories: (keys) => set({ activeCategories: keys }),
   selectPoint: (id) => set({ selectedPointId: id, selectedRouteId: null, selectedZoneId: null }),
   selectRoute: (id) => set({ selectedRouteId: id, selectedPointId: null, selectedZoneId: null }),
   selectZone: (id) => set({ selectedZoneId: id, selectedPointId: null, selectedRouteId: null }),
   clearSelection: () => set({ selectedPointId: null, selectedRouteId: null, selectedZoneId: null }),
   setZoomScale: (zoomScale) => set({ zoomScale: Math.min(Math.max(zoomScale, 1), 4) }),
+  setPan: (panX, panY) => set({ panX, panY }),
+  setZoomAndPan: (zoomScale, panX, panY) =>
+    set({ zoomScale: Math.min(Math.max(zoomScale, 1), 4), panX, panY }),
+  resetZoomPan: () => set({ zoomScale: 1, panX: 0, panY: 0 }),
+  setAddMappingOpen: (addMappingOpen) => set({ addMappingOpen }),
 
   setData: ({ building, floors, assets, points, routes, zones }) => {
     set({ building, floors, assets, points, routes, zones: zones || [], loading: false })

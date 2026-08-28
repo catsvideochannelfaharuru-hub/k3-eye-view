@@ -850,3 +850,133 @@ code {
   transform-origin: bottom center;
   pointer-events: none;
 }
+
+/* --- Accordion "Tambah Mapping" --- */
+.accordion {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.accordion__header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: var(--hazard-dark);
+  color: var(--hazard);
+  font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  border: none;
+}
+
+.accordion__chevron { transition: transform 0.15s ease; }
+.accordion__chevron.open { transform: rotate(180deg); }
+
+.accordion__body { padding: 14px; }
+
+.add-mapping-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.add-mapping-list button {
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.add-mapping-list button:hover { border-color: var(--text); background: var(--bg); }
+
+.add-toolbar--vertical {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.add-toolbar--vertical button {
+  width: 100%;
+}
+
+/* --- Select all layer --- */
+.layer-panel__title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.layer-panel__title-row .layer-panel__title { margin-bottom: 0; }
+
+.layer-select-all {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* --- Asset picker: category badges --- */
+.asset-picker__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.asset-picker__badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.asset-picker__badge span {
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 0 6px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.asset-picker__badge.active {
+  background: var(--hazard-dark);
+  border-color: var(--hazard-dark);
+  color: var(--hazard);
+}
+
+.asset-picker__badge.active span { background: rgba(255,255,255,0.15); color: var(--hazard); }
+
+/* --- Marker & point: tampilkan icon (bukan cuma dot polos) --- */
+.floor2d__point {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+
+/* --- Evac route: lebih tebal & gampang diklik --- */
+.evac-route-line {
+  stroke-width: 3;
+}
+
+/* --- Pan/zoom: floor2d pakai transform (bukan native scroll lagi) --- */
+.floor2d-zoom-container { overflow: hidden; user-select: none; }
+.floor2d { width: 100%; }

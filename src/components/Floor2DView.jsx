@@ -1,9 +1,10 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useAppStore, STATUS_META } from '../store/useAppStore'
 import ZoomControls from './ZoomControls'
 import { placeAssetPoint, placeMarkerPoint } from '../lib/k3PointsApi'
-import { saveZone } from '../lib/hazardZonesApi'
 import { enrichPoints, ZONE_TYPE_META } from '../lib/categoryHelpers'
+
+const DRAG_THRESHOLD = 5 // px — di bawah ini dianggap klik, bukan geser
 
 export default function Floor2DView() {
   const activeFloor = useAppStore((s) => s.activeFloor())
@@ -28,9 +29,15 @@ export default function Floor2DView() {
   const routes = useAppStore((s) => s.routes)
   const zones = useAppStore((s) => s.zones)
   const zoomScale = useAppStore((s) => s.zoomScale)
-  const setZoomScale = useAppStore((s) => s.setZoomScale)
+  const panX = useAppStore((s) => s.panX)
+  const panY = useAppStore((s) => s.panY)
+  const setZoomAndPan = useAppStore((s) => s.setZoomAndPan)
+  const setPan = useAppStore((s) => s.setPan)
 
+  const containerRef = useRef(null)
+  const dragRef = useRef({ dragging: false, moved: false, startX: 0, startY: 0, startPanX: 0, startPanY: 0 })
   const pinchRef = useRef({ active: false, startDist: 0, startScale: 1 })
+  const [isDragging, setIsDragging] = useState(false)
 
   if (!activeFloor) return null
 
@@ -39,20 +46,24 @@ export default function Floor2DView() {
   )
   const floorRoutes = routes.filter((r) => r.floor_id === activeFloor.id)
   const floorZones = zones.filter((z) => z.floor_id === activeFloor.id && activeCategories.includes('hazard_zone'))
+  const interactiveMode = Boolean(drawingRoute || drawingZone || placementMode)
+
+  function clientToFraction(clientX, clientY, el) {
+    const rect = el.getBoundingClientRect()
+    const x = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+    const y = Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1)
+    return { x, y }
+  }
 
   async function handleImageClick(e) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const x = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1)
-    const y = Math.min(Math.max((e.clientY - rect.top) / rect.height, 0), 1)
+    if (dragRef.current.moved) {
+      dragRef.current.moved = false
+      return // itu geser, bukan klik
+    }
+    const { x, y } = clientToFraction(e.clientX, e.clientY, e.currentTarget)
 
-    if (drawingRoute) {
-      addRouteVertex({ x, y })
-      return
-    }
-    if (drawingZone) {
-      addZoneVertex({ x, y })
-      return
-    }
+    if (drawingRoute) { addRouteVertex({ x, y }); return }
+    if (drawingZone) { addZoneVertex({ x, y }); return }
     if (placementMode?.kind === 'asset') {
       const asset = placementMode.asset
       cancelPlacement()
@@ -78,6 +89,62 @@ export default function Floor2DView() {
     }
   }
 
+  // --- Scroll wheel zoom (di-zoom ke arah kursor) ---
+  function handleWheel(e) {
+    e.preventDefault()
+    const container = containerRef.current
+    const rect = container.getBoundingClientRect()
+    const mx = e.clientX - rect.left
+    const my = e.clientY - rect.top
+
+    const oldScale = zoomScale
+    const delta = -e.deltaY * 0.0015
+    const newScale = Math.min(Math.max(oldScale * (1 + delta), 1), 4)
+
+    // titik konten yang ada di bawah kursor harus tetap di bawah kursor setelah zoom
+    const contentX = (mx - panX) / oldScale
+    const contentY = (my - panY) / oldScale
+    const newPanX = newScale === 1 ? 0 : mx - contentX * newScale
+    const newPanY = newScale === 1 ? 0 : my - contentY * newScale
+
+    setZoomAndPan(newScale, newPanX, newPanY)
+  }
+
+  // --- Drag to pan (mouse) ---
+  function handleMouseDown(e) {
+    if (e.button !== 0) return
+    dragRef.current = {
+      dragging: true,
+      moved: false,
+      startX: e.clientX,
+      startY: e.clientY,
+      startPanX: panX,
+      startPanY: panY,
+    }
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+  }
+  function handleMouseMove(e) {
+    const d = dragRef.current
+    if (!d.dragging) return
+    const dx = e.clientX - d.startX
+    const dy = e.clientY - d.startY
+    if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+      d.moved = true
+      setIsDragging(true)
+    }
+    if (d.moved) {
+      setPan(d.startPanX + dx, d.startPanY + dy)
+    }
+  }
+  function handleMouseUp() {
+    dragRef.current.dragging = false
+    setIsDragging(false)
+    window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('mouseup', handleMouseUp)
+    // dragRef.current.moved dibaca sekali oleh handleImageClick, lalu direset di sana
+  }
+
   // --- Pinch-to-zoom (touch) ---
   function touchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX
@@ -94,7 +161,8 @@ export default function Floor2DView() {
       e.preventDefault()
       const dist = touchDist(e.touches)
       const ratio = dist / pinchRef.current.startDist
-      setZoomScale(pinchRef.current.startScale * ratio)
+      const newScale = Math.min(Math.max(pinchRef.current.startScale * ratio, 1), 4)
+      useAppStore.getState().setZoomScale(newScale)
     }
   }
   function handleTouchEnd(e) {
@@ -103,25 +171,32 @@ export default function Floor2DView() {
 
   const routePointsAttr = (pts) => pts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')
   const zonePointsAttr = (pts) => pts.map((p) => `${p.x * 100},${p.y * 100}`).join(' ')
-  const interactiveMode = Boolean(drawingRoute || drawingZone || placementMode)
 
   return (
     <div
+      ref={containerRef}
       className="floor2d-zoom-container"
+      onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      style={{ cursor: interactiveMode ? 'crosshair' : isDragging ? 'grabbing' : 'grab' }}
     >
       <ZoomControls />
       <div
         className={`floor2d ${interactiveMode ? 'floor2d--adding' : ''}`}
-        style={{ width: `${zoomScale * 100}%` }}
+        onMouseDown={handleMouseDown}
+        style={{
+          transform: `translate(${panX}px, ${panY}px) scale(${zoomScale})`,
+          transformOrigin: '0 0',
+        }}
       >
         <img
           className="floor2d__image"
           src={activeFloor.image_url}
           alt={activeFloor.name}
           onClick={handleImageClick}
+          draggable={false}
         />
 
         <svg className="floor2d__routes" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -140,16 +215,17 @@ export default function Floor2DView() {
                 points={zonePointsAttr(z.points)}
                 className={`hazard-zone ${selected ? 'hazard-zone--selected' : ''}`}
                 style={{ fill: meta.color, stroke: meta.color }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  selectZone(z.id)
-                }}
+                onClick={(e) => { e.stopPropagation(); selectZone(z.id) }}
               />
             )
           })}
           {drawingZone && zoneDraft.length > 0 && (
             <polygon points={zonePointsAttr(zoneDraft)} className="hazard-zone hazard-zone--draft" />
           )}
+          {drawingZone &&
+            zoneDraft.map((p, i) => (
+              <circle key={i} cx={p.x * 100} cy={p.y * 100} r={0.8} className="evac-route-vertex" />
+            ))}
 
           {floorRoutes.map((r) => (
             <polyline
@@ -157,10 +233,7 @@ export default function Floor2DView() {
               points={routePointsAttr(r.points)}
               className={`evac-route-line ${r.id === selectedRouteId ? 'evac-route-line--selected' : ''}`}
               markerEnd="url(#evac-arrow)"
-              onClick={(e) => {
-                e.stopPropagation()
-                selectRoute(r.id)
-              }}
+              onClick={(e) => { e.stopPropagation(); selectRoute(r.id) }}
             />
           ))}
           {drawingRoute && routeDraft.length > 0 && (
@@ -176,11 +249,7 @@ export default function Floor2DView() {
           const selected = p.id === selectedPointId
           if (p.marker_type === 'cctv') {
             return (
-              <div
-                key={p.id}
-                className="floor2d__cctv"
-                style={{ left: `${p.pos_x * 100}%`, top: `${p.pos_y * 100}%` }}
-              >
+              <div key={p.id} className="floor2d__cctv" style={{ left: `${p.pos_x * 100}%`, top: `${p.pos_y * 100}%` }}>
                 <div
                   className="floor2d__cctv-cone"
                   style={{ transform: `translate(-50%,-100%) rotate(${p.direction_deg || 0}deg)` }}
@@ -188,10 +257,7 @@ export default function Floor2DView() {
                 <button
                   className={`floor2d__marker ${selected ? 'floor2d__marker--selected' : ''}`}
                   title={p.displayLabel}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    selectPoint(p.id)
-                  }}
+                  onClick={(e) => { e.stopPropagation(); selectPoint(p.id) }}
                 >
                   {p.icon}
                 </button>
@@ -205,10 +271,7 @@ export default function Floor2DView() {
                 className={`floor2d__marker ${selected ? 'floor2d__marker--selected' : ''}`}
                 style={{ left: `${p.pos_x * 100}%`, top: `${p.pos_y * 100}%` }}
                 title={p.displayLabel}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  selectPoint(p.id)
-                }}
+                onClick={(e) => { e.stopPropagation(); selectPoint(p.id) }}
               >
                 {p.icon}
               </button>
@@ -219,17 +282,12 @@ export default function Floor2DView() {
             <button
               key={p.id}
               className={`floor2d__point ${selected ? 'floor2d__point--selected' : ''}`}
-              style={{
-                left: `${p.pos_x * 100}%`,
-                top: `${p.pos_y * 100}%`,
-                background: status.color,
-              }}
+              style={{ left: `${p.pos_x * 100}%`, top: `${p.pos_y * 100}%`, background: status.color }}
               title={`${p.displayLabel} — ${status.label}`}
-              onClick={(e) => {
-                e.stopPropagation()
-                selectPoint(p.id)
-              }}
-            />
+              onClick={(e) => { e.stopPropagation(); selectPoint(p.id) }}
+            >
+              {p.icon}
+            </button>
           )
         })}
       </div>

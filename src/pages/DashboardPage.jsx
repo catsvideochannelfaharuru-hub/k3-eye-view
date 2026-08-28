@@ -7,7 +7,7 @@ import Floor2DView from '../components/Floor2DView'
 import Floor3DView from '../components/Floor3DView'
 import ViewModeToggle from '../components/ViewModeToggle'
 import UserBadge from '../components/UserBadge'
-import AddPointToolbar from '../components/AddPointToolbar'
+import AddMappingAccordion from '../components/AddPointToolbar'
 
 export default function DashboardPage() {
   useLoadK3Data()
@@ -36,10 +36,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <AddPointToolbar />
-
       <div className="app-body">
         <div className="app-sidebar">
+          <AddMappingAccordion />
           <DetailPanel />
           <LayerPanel />
         </div>
